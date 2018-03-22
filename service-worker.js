@@ -1,4 +1,4 @@
-const cacheName = 'restaurant-reviews-v4';
+const cacheName = 'restaurant-reviews-v5';
 const urlsToCache = [
     '/',
     '/js/main.js',

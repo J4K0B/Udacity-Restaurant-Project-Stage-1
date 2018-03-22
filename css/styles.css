@@ -164,8 +164,8 @@ nav h1 a:hover {
   width: 100%;
   height: auto;
 }
-#restaurants-list li h1 {
-  color: #f18200;
+#restaurants-list li h2 {
+  color: #e17900;
   font-family: Arial,sans-serif;
   font-size: 14pt;
   font-weight: 200;
@@ -179,7 +179,7 @@ nav h1 a:hover {
   font-size: 11pt;
 }
 #restaurants-list li a {
-  background-color: orange;
+  background-color: #a56900 ;
   border-bottom: 3px solid #eee;
   color: #fff;
   display: inline-block;
