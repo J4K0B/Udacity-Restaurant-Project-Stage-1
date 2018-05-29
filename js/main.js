@@ -111,6 +111,7 @@ updateRestaurants = () => {
   );
 };
 
+
 /**
  * Clear current restaurants, their HTML and remove their map markers.
  */
@@ -188,7 +189,7 @@ addMarkersToMap = (restaurants = self.restaurants) => {
  */
 if (navigator.serviceWorker) {
   navigator.serviceWorker
-    .register("service-worker.js")
+    .register("/service-worker.js")
     .then(() => console.log("success"))
     .catch(err => console.log(err));
 }

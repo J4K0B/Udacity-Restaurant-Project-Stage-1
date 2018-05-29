@@ -1,3 +1,8 @@
+const dbPromise = idb.open("restaurants", 1, upgradeDb => {
+  const keyValStore = upgradeDb.createObjectStore("restaurants", {
+    keyPath: "id"
+  });
+});
 /**
  * Common database helper functions.
  */
@@ -15,22 +20,48 @@ class DBHelper {
    * Fetch all restaurants.
    */
   static fetchRestaurants(callback) {
-    let xhr = new XMLHttpRequest();
-    xhr.open("GET", DBHelper.DATABASE_URL);
-    xhr.onload = () => {
-      if (xhr.status === 200) {
-        // Got a success response from server!
-        const json = JSON.parse(xhr.responseText);
-        console.log(json);
-        const restaurants = json;
-        callback(null, restaurants);
-      } else {
-        // Oops!. Got an error from server.
-        const error = `Request failed. Returned status of ${xhr.status}`;
-        callback(error, null);
-      }
-    };
-    xhr.send();
+    // old code
+    // let xhr = new XMLHttpRequest();
+    // xhr.open("GET", DBHelper.DATABASE_URL);
+    // xhr.onload = () => {
+    //   if (xhr.status === 200) {
+    //     // Got a success response from server!
+    //     const json = JSON.parse(xhr.responseText);
+    //     console.log(json);
+    //     const restaurants = json;
+    //     callback(null, restaurants);
+    //   } else {
+    //     // Oops!. Got an error from server.
+    //     const error = `Request failed. Returned status of ${xhr.status}`;
+    //     callback(error, null);
+    //   }
+    // };
+    // xhr.send();
+    dbPromise.then(db => {
+      const index = db.transaction("restaurants").objectStore("restaurants");
+      let served = false;
+      index.getAll().then(restaurants => {
+        console.log(restaurants);
+        if (restaurants) {
+          callback(null, restaurants);
+          served = true;
+        }
+        fetch(DBHelper.DATABASE_URL)
+          .then(json => json.json())
+          .then(restaurants2 => {
+            if (!db) return;
+
+            const tx = db.transaction("restaurants", "readwrite");
+            var store = tx.objectStore("restaurants");
+            restaurants2.forEach(restaurant => store.put(restaurant));
+            if (!served || restaurants.length < restaurants2.length)
+              callback(null, restaurants2);
+          })
+          .catch(err => {
+            if (!served) callback(err, null);
+          });
+      });
+    });
   }
 
   /**
@@ -38,20 +69,46 @@ class DBHelper {
    */
   static fetchRestaurantById(id, callback) {
     // fetch all restaurants with proper error handling.
-    DBHelper.fetchRestaurants((error, restaurants) => {
-      if (error) {
-        callback(error, null);
-      } else {
-        const restaurant = restaurants.find(r => r.id == id);
-        if (restaurant) {
-          // Got the restaurant
-          callback(null, restaurant);
-        } else {
-          // Restaurant does not exist in the database
-          callback("Restaurant does not exist", null);
+    dbPromise.then(db => {
+      const index = db.transaction("restaurants").objectStore("restaurants");
+      let served = false;
+      index.getAll().then(restaurants => {
+        if (restaurants) {
+          const restaurant = restaurants.find(r => r.id == id);
+          if (restaurant) {
+            callback(null, restaurant);
+            served = true;
+          }
         }
-      }
+        fetch(`${DBHelper.DATABASE_URL}/${id}`)
+          .then(json => json.json())
+          .then(restaurant2 => {
+            if (!db) return;
+
+            const tx = db.transaction("restaurants", "readwrite");
+            const store = tx.objectStore("restaurants");
+            store.put(restaurant2);
+            if (!served) callback(null, restaurant2);
+          })
+          .catch(() => {
+            if (!served) callback("Restaurant does not exist", null);
+          });
+      });
     });
+    //   DBHelper.fetchRestaurants((error, restaurants) => {
+    //     if (error) {
+    //       callback(error, null);
+    //     } else {
+    //       const restaurant = restaurants.find(r => r.id == id);
+    //       if (restaurant) {
+    //         // Got the restaurant
+    //         callback(null, restaurant);
+    //       } else {
+    //         // Restaurant does not exist in the database
+    //         callback("Restaurant does not exist", null);
+    //       }
+    //     }
+    //   });
   }
 
   /**
