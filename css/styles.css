@@ -308,6 +308,22 @@ nav h1 a:hover {
   color: #666;
 }
 
+#review-input {
+  width: 100%;
+}
+
+#review-form {
+  width: 100%;
+}
+
+#input-comments {
+  width: auto;
+}
+
+#review-form label {
+  display: block;
+}
+
 @media screen and (min-width: 750px) {
   /* Map */
   #map {

@@ -1,5 +1,12 @@
-const dbPromise = idb.open("restaurants", 1, upgradeDb => {
+const restaurantPromise = idb.open("restaurants", 3, upgradeDb => {
+  if (upgradeDb.oldVersion >= 3) return;
   const keyValStore = upgradeDb.createObjectStore("restaurants", {
+    keyPath: "id"
+  });
+});
+const reviewsPromise = idb.open("reviews", 3, upgradeDb => {
+  if (upgradeDb.oldVersion >= 3) return;
+  const keyValStore = upgradeDb.createObjectStore("reviews", {
     keyPath: "id"
   });
 });
@@ -13,40 +20,22 @@ class DBHelper {
    */
   static get DATABASE_URL() {
     const port = 1337; // Change this to your server port
-    return `http://192.168.0.101:${port}/restaurants`;
+    return `http://192.168.0.101:${port}`;
   }
 
   /**
    * Fetch all restaurants.
    */
   static fetchRestaurants(callback) {
-    // old code
-    // let xhr = new XMLHttpRequest();
-    // xhr.open("GET", DBHelper.DATABASE_URL);
-    // xhr.onload = () => {
-    //   if (xhr.status === 200) {
-    //     // Got a success response from server!
-    //     const json = JSON.parse(xhr.responseText);
-    //     console.log(json);
-    //     const restaurants = json;
-    //     callback(null, restaurants);
-    //   } else {
-    //     // Oops!. Got an error from server.
-    //     const error = `Request failed. Returned status of ${xhr.status}`;
-    //     callback(error, null);
-    //   }
-    // };
-    // xhr.send();
-    dbPromise.then(db => {
+    restaurantPromise.then(db => {
       const index = db.transaction("restaurants").objectStore("restaurants");
       let served = false;
       index.getAll().then(restaurants => {
-        console.log(restaurants);
         if (restaurants) {
           callback(null, restaurants);
           served = true;
         }
-        fetch(DBHelper.DATABASE_URL)
+        fetch(`${DBHelper.DATABASE_URL}/restaurants`)
           .then(json => json.json())
           .then(restaurants2 => {
             if (!db) return;
@@ -68,47 +57,96 @@ class DBHelper {
    * Fetch a restaurant by its ID.
    */
   static fetchRestaurantById(id, callback) {
-    // fetch all restaurants with proper error handling.
-    dbPromise.then(db => {
-      const index = db.transaction("restaurants").objectStore("restaurants");
-      let served = false;
-      index.getAll().then(restaurants => {
-        if (restaurants) {
-          const restaurant = restaurants.find(r => r.id == id);
-          if (restaurant) {
-            callback(null, restaurant);
-            served = true;
+    restaurantPromise.then(restaurantsDb => {
+      reviewsPromise.then(reviewsDb => {
+        // check if there are reviews for the restaurant
+        const reviewsStore = reviewsDb
+          .transaction("reviews")
+          .objectStore("reviews");
+        let reviewsAvailable = false;
+        let restaurantReviews = null;
+        reviewsStore.getAll().then(reviews => {
+          if (reviews) {
+            restaurantReviews = reviews.filter(r => r["restaurant_id"] == id);
+            if (restaurantReviews.length > 0) {
+              // there are cached reviews for the requested restaurant
+              reviewsAvailable = true;
+            }
           }
-        }
-        fetch(`${DBHelper.DATABASE_URL}/${id}`)
-          .then(json => json.json())
-          .then(restaurant2 => {
-            if (!db) return;
 
-            const tx = db.transaction("restaurants", "readwrite");
-            const store = tx.objectStore("restaurants");
-            store.put(restaurant2);
-            if (!served) callback(null, restaurant2);
-          })
-          .catch(() => {
-            if (!served) callback("Restaurant does not exist", null);
+          const restaurantsStore = restaurantsDb
+            .transaction("restaurants")
+            .objectStore("restaurants");
+          let served = false;
+          let restaurantAvailable = false;
+          let restaurant = null;
+          // look for cached restaurant
+          restaurantsStore.getAll().then(restaurants => {
+            if (restaurants) {
+              // there are cached restaurants ready to serve
+              restaurant = restaurants.find(r => r.id == id);
+              if (restaurant) restaurantAvailable = true;
+              console.log(restaurantAvailable);
+              console.log(reviewsAvailable);
+              // both are available in cache
+              if (restaurantAvailable && reviewsAvailable) {
+                restaurant.reviews = restaurantReviews;
+                callback(null, restaurant);
+                served = true;
+              }
+            }
+            let fetchedReviews = [];
+            let fetchedRestaurant = null;
+
+            // get new reviews for restaurant information
+            fetch(`${DBHelper.DATABASE_URL}/reviews/?restaurant_id=${id}`)
+              .then(json => json.json())
+              .then(reviews => {
+                // callback when we have restaurant and didn't callback earlier
+                if (!served && restaurantAvailable) {
+                  restaurant.reviews = reviews;
+                  served = true;
+                  callback(null, restaurant);
+                }
+                // update cached reviews DB
+                if (reviewsDb) {
+                  const reviewsTx = reviewsDb.transaction(
+                    "reviews",
+                    "readwrite"
+                  );
+                  const reviewsStore2 = reviewsTx.objectStore("reviews");
+                  reviews.forEach(review =>
+                    reviewsStore2.put(review, review.id)
+                  );
+                }
+                // get new restaurant information
+                fetch(`${DBHelper.DATABASE_URL}/restaurants/${id}`)
+                  .then(json => json.json())
+                  .then(fetchedRestaurant => {
+                    fetchedRestaurant.reviews = fetchedReviews;
+                    // callback when not already done
+                    if (!served) {
+                      callback(null, fetchedRestaurant);
+                    }
+                    // update cached restaurants db
+                    if (!restaurantsDb) return;
+                    const restaurantTx = restaurantsDb.transaction(
+                      "restaurants",
+                      "readwrite"
+                    );
+                    const restaurantsStore2 = restaurantTx.objectStore(
+                      "restaurants"
+                    );
+                    restaurantsStore2.put(restaurant2);
+                  })
+                  .catch(() => {
+                    if (!served) callback("Restaurant does not exist", null);
+                  });
+              });
           });
+        });
       });
     });
-    //   DBHelper.fetchRestaurants((error, restaurants) => {
-    //     if (error) {
-    //       callback(error, null);
-    //     } else {
-    //       const restaurant = restaurants.find(r => r.id == id);
-    //       if (restaurant) {
-    //         // Got the restaurant
-    //         callback(null, restaurant);
-    //       } else {
-    //         // Restaurant does not exist in the database
-    //         callback("Restaurant does not exist", null);
-    //       }
-    //     }
-    //   });
   }
 
   /**
