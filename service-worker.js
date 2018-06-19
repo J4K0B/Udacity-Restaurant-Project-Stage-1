@@ -28,7 +28,6 @@ self.addEventListener("fetch", event => {
 });
 
 self.addEventListener("install", event => {
-  console.log("installed");
   event.waitUntil(
     caches.open(cacheName).then(cache => cache.addAll(urlsToCache))
   );

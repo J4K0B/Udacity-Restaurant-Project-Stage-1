@@ -86,8 +86,6 @@ class DBHelper {
               // there are cached restaurants ready to serve
               restaurant = restaurants.find(r => r.id == id);
               if (restaurant) restaurantAvailable = true;
-              console.log(restaurantAvailable);
-              console.log(reviewsAvailable);
               // both are available in cache
               if (restaurantAvailable && reviewsAvailable) {
                 restaurant.reviews = restaurantReviews;
@@ -147,6 +145,55 @@ class DBHelper {
         });
       });
     });
+  }
+
+  static favoriteRestaurant(id, newState) {
+    return new Promise((resolve, reject) => {
+      fetch(`${this.DATABASE_URL}/restaurants/${id}/?is_favorite=${newState}`, {
+        method: "PUT",
+        headers: {
+          accept: "application/json"
+        }
+      })
+        .then(res => res.json())
+        .then(json => {
+          // update local db
+          restaurantPromise.then(restaurantsDb => {
+            const tx = restaurantsDb.transaction("restaurants", "readwrite");
+            const store = tx.objectStore("restaurants");
+            store.put(json);
+            resolve(json);
+          });
+        })
+        .catch(err => reject(err));
+    });
+  }
+
+  static async postReview({ restaurantId, comments, name, ratingNumber }) {
+    const data = await fetch(`${this.DATABASE_URL}/reviews/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify({
+        restaurant_id: restaurantId,
+        rating: ratingNumber,
+        comments,
+        name
+      })
+    });
+    const json = await data.json();
+    const reviewsDb = await reviewsPromise;
+    const tx = reviewsDb.transaction("reviews", "readwrite");
+    const store = tx.objectStore("reviews");
+    store.put(json, json.id);
+    // const reviewsStore = reviewsDb
+    //   .transaction("reviews")
+    //   .objectStore("reviews");
+    const allReviews = await store.getAll();
+    const reviews = allReviews.filter(r => r["restaurant_id"] == restaurantId);
+    return reviews;
   }
 
   /**

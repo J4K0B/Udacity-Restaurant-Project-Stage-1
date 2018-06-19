@@ -58,6 +58,16 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
   const address = document.getElementById("restaurant-address");
   address.innerHTML = restaurant.address;
 
+  const heart = document.getElementById("favorite-heart");
+  let isFavorite = restaurant["is_favorite"] === "true";
+  heart.className = isFavorite ? "favorite" : "";
+
+  heart.onclick = () =>
+    favorite(isFavorite, newState => {
+      isFavorite = !isFavorite;
+      heart.className = newState ? "favorite" : "";
+    });
+
   const image = document.getElementById("restaurant-img");
   image.className = "restaurant-img";
   image.src = DBHelper.imageUrlForRestaurant(restaurant);
@@ -70,10 +80,18 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
   if (restaurant.operating_hours) {
     fillRestaurantHoursHTML();
   }
+  // fill review form
   fillFormHtml();
   // fill reviews
   fillReviewsHTML();
 };
+
+function favorite(previousState, callback) {
+  const id = getParameterByName("id");
+  DBHelper.favoriteRestaurant(id, !previousState).then(res => {
+    callback(!previousState);
+  });
+}
 
 function fillFormHtml() {
   const rating = document.getElementById("input-rating");
@@ -85,8 +103,6 @@ function fillFormHtml() {
   }
   const form = document.getElementById("review-form");
 
-  const url = "http://localhost:1337";
-
   form.onsubmit = async function(e) {
     e.preventDefault();
 
@@ -94,22 +110,12 @@ function fillFormHtml() {
     const restaurantId = getParameterByName("id");
     const comments = document.getElementById("input-comments").value;
     const name = document.getElementById("input-name").value;
-    console.log({ restaurantId, ratingNumber, comments, name });
-    const data = await fetch(`${url}/reviews/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json"
-      },
-      body: JSON.stringify({
-        restaurant_id: restaurantId,
-        rating: ratingNumber,
-        comments,
-        name
-      })
-    });
-    const json = await data.json();
-    console.log(json);
+    DBHelper.postReview({ ratingNumber, restaurantId, comments, name }).then(
+      reviews => {
+        fillReviewsHTML(reviews);
+        form.reset();
+      }
+    );
   };
 }
 
