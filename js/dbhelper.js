@@ -10,6 +10,10 @@ const reviewsPromise = idb.open("reviews", 3, upgradeDb => {
     keyPath: "id"
   });
 });
+const offlinePromise = idb.open("offline", 3, upgradeDb => {
+  if (upgradeDb.oldVersion >= 3) return;
+  const keyValStore = upgradeDb.createObjectStore("offline");
+});
 /**
  * Common database helper functions.
  */
@@ -20,7 +24,7 @@ class DBHelper {
    */
   static get DATABASE_URL() {
     const port = 1337; // Change this to your server port
-    return `http://192.168.0.101:${port}`;
+    return `http://127.0.0.1:${port}`;
   }
 
   /**
@@ -37,8 +41,9 @@ class DBHelper {
         }
         fetch(`${DBHelper.DATABASE_URL}/restaurants`)
           .then(json => json.json())
-          .then(restaurants2 => {
+          .then(async restaurants2 => {
             if (!db) return;
+            // await this.doOfflineRequests();
 
             const tx = db.transaction("restaurants", "readwrite");
             var store = tx.objectStore("restaurants");
@@ -99,7 +104,8 @@ class DBHelper {
             // get new reviews for restaurant information
             fetch(`${DBHelper.DATABASE_URL}/reviews/?restaurant_id=${id}`)
               .then(json => json.json())
-              .then(reviews => {
+              .then(async reviews => {
+                await this.doOfflineRequests();
                 // callback when we have restaurant and didn't callback earlier
                 if (!served && restaurantAvailable) {
                   restaurant.reviews = reviews;
@@ -113,9 +119,8 @@ class DBHelper {
                     "readwrite"
                   );
                   const reviewsStore2 = reviewsTx.objectStore("reviews");
-                  reviews.forEach(review =>
-                    reviewsStore2.put(review, review.id)
-                  );
+                  console.log(reviews);
+                  reviews.forEach(review => reviewsStore2.put(review));
                 }
                 // get new restaurant information
                 fetch(`${DBHelper.DATABASE_URL}/restaurants/${id}`)
@@ -156,8 +161,9 @@ class DBHelper {
         }
       })
         .then(res => res.json())
-        .then(json => {
+        .then(async json => {
           // update local db
+          await this.doOfflineRequests();
           restaurantPromise.then(restaurantsDb => {
             const tx = restaurantsDb.transaction("restaurants", "readwrite");
             const store = tx.objectStore("restaurants");
@@ -169,8 +175,38 @@ class DBHelper {
     });
   }
 
-  static async postReview({ restaurantId, comments, name, ratingNumber }) {
-    const data = await fetch(`${this.DATABASE_URL}/reviews/`, {
+  static async postReview(restaurantInfo) {
+    try {
+      const data = await this.reviewRequest(restaurantInfo);
+      await this.doOfflineRequests();
+      const json = await data.json();
+      const reviewsDb = await reviewsPromise;
+      const tx = reviewsDb.transaction("reviews", "readwrite");
+      const store = tx.objectStore("reviews");
+      store.put(json);
+      // const reviewsStore = reviewsDb
+      //   .transaction("reviews")
+      //   .objectStore("reviews");
+      const allReviews = await store.getAll();
+      const reviews = allReviews.filter(
+        r => r["restaurant_id"] == restaurantInfo.restaurantId
+      );
+      return reviews;
+    } catch (e) {
+      console.log(e);
+      const offlineDb = await offlinePromise;
+      const tx = offlineDb.transaction("offline", "readwrite");
+      const store = tx.objectStore("offline");
+
+      store.put(
+        restaurantInfo,
+        `${restaurantInfo.restaurantId}${restaurantInfo.ratingNumber}`
+      );
+    }
+  }
+
+  static reviewRequest({ restaurantId, ratingNumber, comments, name }) {
+    return fetch(`${this.DATABASE_URL}/reviews/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -183,17 +219,24 @@ class DBHelper {
         name
       })
     });
-    const json = await data.json();
-    const reviewsDb = await reviewsPromise;
-    const tx = reviewsDb.transaction("reviews", "readwrite");
-    const store = tx.objectStore("reviews");
-    store.put(json, json.id);
-    // const reviewsStore = reviewsDb
-    //   .transaction("reviews")
-    //   .objectStore("reviews");
-    const allReviews = await store.getAll();
-    const reviews = allReviews.filter(r => r["restaurant_id"] == restaurantId);
-    return reviews;
+  }
+
+  // does all offline requests if they are still there
+  static async doOfflineRequests() {
+    const offlineDb = await offlinePromise;
+    const tx = offlineDb.transaction("offline", "readwrite");
+    const store = tx.objectStore("offline");
+    const offlineReviews = await store.getAll();
+    console.log(offlineReviews);
+    if (offlineReviews.length <= 0) return;
+    offlineReviews.forEach(review => {
+      this.reviewRequest(review).then(async () => {
+        const tx2 = offlineDb.transaction("offline", "readwrite");
+        const store2 = tx2.objectStore("offline");
+
+        await store2.clear();
+      });
+    });
   }
 
   /**
