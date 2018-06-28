@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Normalize.css for better cross-browser consistency -->
+  <link rel="stylesheet" src="//normalize-css.googlecode.com/svn/trunk/normalize.css" />
+  <!-- Main CSS file -->
+  <link rel="stylesheet" href="css/styles.css" type="text/css">
+  <title>Restaurant Info</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body class="inside">
+  <!-- Beginning header -->
+  <header>
+    <!-- Beginning nav -->
+    <nav>
+      <h1>
+        <a href="/">Restaurant Reviews</a>
+      </h1>
+    </nav>
+    <!-- Beginning breadcrumb -->
+    <nav id="breadcrumb" aria-label="Breadcrumb">
+      <li>
+        <a href="/">Home</a>
+      </li>
+    </nav>
+    <!-- End breadcrumb -->
+    <!-- End nav -->
+  </header>
+  <!-- End header -->
+
+  <!-- Beginning main -->
+  <main id="maincontent">
+    <!-- Beginning map -->
+    <section id="map-container">
+      <div id="map" role="application"></div>
+    </section>
+    <!-- End map -->
+    <!-- Beginning restaurant -->
+    <div class="restaurant-sections">
+      <section id="restaurant-container">
+        <h2 id="restaurant-name"></h2>
+        <button aria-label="favorite restaurant" id="favorite-heart">❤</button>
+        <img id="restaurant-img">
+        <p id="restaurant-cuisine"></p>
+        <p id="restaurant-address"></p>
+        <table id="restaurant-hours"></table>
+        <div id="review-input">
+          <h3>Your Review</h3>
+          <form id="review-form">
+            <label for="name">Your Name:
+              <input id="input-name" name="name">
+            </label>
+            <label for="rating">Your Rating:
+              <select name="rating" id="input-rating">
+            </label>
+            </select>
+            <label for="comments">Your Comment:
+              <textarea id="input-comments" name="comments"></textarea>
+            </label>
+            <button>Submit</button>
+          </form>
+        </div>
+      </section>
+      <!-- end restaurant -->
+      <!-- Beginning reviews -->
+      <section id="reviews-container">
+        <ul id="reviews-list"></ul>
+
+      </section>
+
+      <!-- End reviews -->
+
+
+    </div>
+  </main>
+  <!-- End main -->
+
+  <!-- Beginning footer -->
+  <footer id="footer">
+    Copyright (c) 2017
+    <a href="/">
+      <strong>Restaurant Reviews</strong>
+    </a> All Rights Reserved.
+  </footer>
+  <!-- End footer -->
+
+  <!-- Beginning scripts -->
+  <!-- build:js js/db.min.js -->
+  <!-- Database helpers -->
+  <script type="application/javascript" charset="utf-8" src="js/idb.js"></script>
+  <script type="text/javascript" src="js/dbhelper.js"></script>
+  <!-- endbuild -->
+  <!-- Main javascript file -->
+  <!-- build:js js/restaurant_info.min.js -->
+  <script type="text/javascript" src="js/restaurant_info.js"></script>
+  <!-- endbuild -->
+
+
+  <!-- Google Maps -->
+  <!-- <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA8if6DEGoCOlhigx0GKXt7ackCyi609vg&libraries=places&callback=initMap"></script> -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?libraries=places&callback=initMap"></script>
+  <!-- End scripts -->
+
+</body>
+
+</html>

@@ -21,7 +21,9 @@
 
   <main id="maincontent">
     <section id="map-container">
-      <div id="map" role="application"></div>
+      <div id="map" role="application">
+        Click to activate the map
+      </div>
     </section>
     <section>
       <div class="filter-options">
@@ -39,11 +41,13 @@
     </section>
   </main>
 
-  <script type="application/javascript" charset="utf-8" src="js/idb.js"></script>
-  <script type="application/javascript" charset="utf-8" src="js/dbhelper.js"></script>
-  <script type="application/javascript" charset="utf-8" src="js/main.js"></script>
+  <script src="js/db.min.js"></script>
+
+  <script src="js/main.min.js"></script>
+
   <!-- <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA8if6DEGoCOlhigx0GKXt7ackCyi609vg&libraries=places&callback=initMap"></script> -->
-  <script async defer src="https://maps.googleapis.com/maps/api/js?libraries=places&callback=initMap"></script>
+  <!-- <script async defer src="https://maps.googleapis.com/maps/api/js?libraries=places&callback=initMap"></script> -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?libraries=places&callback=callback"></script>
 
 
   <footer id="footer">

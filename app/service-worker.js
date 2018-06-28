@@ -1,10 +1,10 @@
 const cacheName = "restaurant-reviews-v10";
 const urlsToCache = [
   "index.html",
-  "/js/main.js",
-  "/js/dbhelper.js",
-  "/js/idb.js",
-  "/js/restaurant_info.js",
+  // "/js/main.js",
+  // "/js/dbhelper.js",
+  // "/js/idb.js",
+  // "/js/restaurant_info.js",
   "/css/styles.css",
   "/img/1.jpg",
   "/img/2.jpg",
@@ -18,7 +18,10 @@ const urlsToCache = [
   "/img/10.jpg",
   "manifest.json",
   "restaurant.html",
-  "/"
+  "/",
+  "/js/db.min.js",
+  "/js/main.min.js",
+  "/js/restaurant_info.min.js"
 ];
 
 self.addEventListener("fetch", event => {

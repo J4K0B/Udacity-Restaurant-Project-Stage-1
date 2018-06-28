@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="stylesheet" src="//normalize-css.googlecode.com/svn/trunk/normalize.css" />
+  <link rel="stylesheet" href="css/styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="/manifest.json">
+  <title>Restaurant Reviews</title>
+</head>
+
+<body>
+  <header>
+    <nav>
+      <h1>
+        <a href="/">Restaurant Reviews</a>
+      </h1>
+    </nav>
+  </header>
+
+  <main id="maincontent">
+    <section id="map-container">
+      <div id="map" role="application">
+        Click to activate the map
+      </div>
+    </section>
+    <section>
+      <div class="filter-options">
+        <h2>Filter Results</h2>
+        <div class="selection">
+          <select id="neighborhoods-select" name="neighborhoods" onchange="updateRestaurants()" aria-label="neighborhood">
+            <option value="all">All Neighborhoods</option>
+          </select>
+          <select id="cuisines-select" name="cuisines" onchange="updateRestaurants()" aria-label="cuisines">
+            <option value="all">All Cuisines</option>
+          </select>
+        </div>
+      </div>
+      <ul id="restaurants-list"></ul>
+    </section>
+  </main>
+
+  <!-- build:js js/db.min.js -->
+  <script type="application/javascript" charset="utf-8" src="js/idb.js"></script>
+  <script type="application/javascript" charset="utf-8" src="js/dbhelper.js"></script>
+  <!-- endbuild -->
+
+  <!-- build:js js/main.min.js -->
+  <script type="application/javascript" charset="utf-8" src="js/main.js"></script>
+  <!-- endbuild -->
+
+  <!-- <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA8if6DEGoCOlhigx0GKXt7ackCyi609vg&libraries=places&callback=initMap"></script> -->
+  <!-- <script async defer src="https://maps.googleapis.com/maps/api/js?libraries=places&callback=initMap"></script> -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?libraries=places&callback=callback"></script>
+
+
+  <footer id="footer">
+    Copyright (c) 2017
+    <a href="/">
+      <strong>Restaurant Reviews</strong>
+    </a> All Rights Reserved.
+  </footer>
+
+</body>
+
+</html>
