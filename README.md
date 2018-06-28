@@ -6,4 +6,4 @@
 
 ## Stage 3
 
-TODO: write instructions for reviewer ;)
+Open a web server in the dist folder and you're done :)
