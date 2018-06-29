@@ -9,6 +9,13 @@ document.addEventListener("DOMContentLoaded", event => {
   fetchNeighborhoods();
   fetchCuisines();
   setUpMap();
+  DBHelper.doOfflineRequests();
+});
+
+document.addEventListener("online", () => {
+  if (navigator.onLine) {
+    DBHelper.doOfflineRequests();
+  }
 });
 
 /**

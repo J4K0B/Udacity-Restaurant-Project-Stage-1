@@ -119,7 +119,6 @@ class DBHelper {
                     "readwrite"
                   );
                   const reviewsStore2 = reviewsTx.objectStore("reviews");
-                  console.log(reviews);
                   reviews.forEach(review => reviewsStore2.put(review));
                 }
                 // get new restaurant information
@@ -202,6 +201,7 @@ class DBHelper {
         restaurantInfo,
         `${restaurantInfo.restaurantId}${restaurantInfo.ratingNumber}`
       );
+      alert("Your Review will be submitted as soon as you're online!");
     }
   }
 
@@ -223,18 +223,22 @@ class DBHelper {
 
   // does all offline requests if they are still there
   static async doOfflineRequests() {
+    console.log("offlinerequest");
     const offlineDb = await offlinePromise;
     const tx = offlineDb.transaction("offline", "readwrite");
     const store = tx.objectStore("offline");
     const offlineReviews = await store.getAll();
-    console.log(offlineReviews);
     if (offlineReviews.length <= 0) return;
     offlineReviews.forEach(review => {
-      this.reviewRequest(review).then(async () => {
+      this.reviewRequest(review).then(async data => {
         const tx2 = offlineDb.transaction("offline", "readwrite");
         const store2 = tx2.objectStore("offline");
-
         await store2.clear();
+        const json = await data.json();
+        const reviewsDb = await reviewsPromise;
+        const tx = reviewsDb.transaction("reviews", "readwrite");
+        const store = tx.objectStore("reviews");
+        store.put(json);
       });
     });
   }
