@@ -1,11 +1,10 @@
 const gulp = require("gulp");
 const browserSync = require("browser-sync");
 const useref = require("gulp-useref");
-// const uglify = require("gulp-uglify");
 const uglify = require("gulp-uglify-es").default;
 const gulpIf = require("gulp-if");
-// const babel = require("gulp-babel");
 const cssnano = require("gulp-cssnano");
+const htmlmin = require("gulp-htmlmin");
 
 gulp.task("browserSync", () => {
   browserSync.init({
@@ -15,19 +14,19 @@ gulp.task("browserSync", () => {
   });
 });
 
+gulp.task("build", ["useref", "copy"]);
+
 gulp.task("useref", () => {
-  return (
-    gulp
-      .src("app/*.html")
-      .pipe(useref())
-      // .pipe(gulpIf("*.js", babel({ presets: ["env"] })))
-      .pipe(gulpIf("*.js", uglify()))
-      .pipe(gulp.dest("dist"))
-  );
-});
-gulp.task("css", () => {
   return gulp
-    .src("app/css/*.css")
-    .pipe(cssnano())
-    .pipe(gulp.dest("dist/css"));
+    .src("app/*.html")
+    .pipe(useref())
+    .pipe(gulpIf("*.js", uglify()))
+    .pipe(gulpIf("*.css", cssnano()))
+    .pipe(gulp.dest("dist"));
+});
+
+gulp.task("copy", () => {
+  return gulp
+    .src(["app/service-worker.js", "app/logo.png", "app/manifest.json"])
+    .pipe(gulp.dest("dist"));
 });

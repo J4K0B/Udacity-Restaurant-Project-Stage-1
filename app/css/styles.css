@@ -92,7 +92,7 @@ nav h1 a:hover {
   text-decoration: underline;
 }
 #breadcrumb {
-  padding: 10px 10px;
+  padding: 10px 0px;
   list-style: none;
   background-color: #eee;
   font-size: 1rem;
