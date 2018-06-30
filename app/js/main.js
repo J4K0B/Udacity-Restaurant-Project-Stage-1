@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", event => {
   fetchCuisines();
   setUpMap();
   // DBHelper.doOfflineRequests();
+  DBHelper.fireSyncEvent();
 });
 
 // document.addEventListener("online", () => {

@@ -177,15 +177,18 @@ class DBHelper {
   static async postReview(restaurantInfo) {
     try {
       const data = await this.reviewRequest(restaurantInfo);
-      await this.doOfflineRequests();
+
+      this.fireSyncEvent();
       const json = await data.json();
       const reviewsDb = await reviewsPromise;
       const tx = reviewsDb.transaction("reviews", "readwrite");
       const store = tx.objectStore("reviews");
+
       store.put(json);
       // const reviewsStore = reviewsDb
       //   .transaction("reviews")
       //   .objectStore("reviews");
+
       const allReviews = await store.getAll();
       const reviews = allReviews.filter(
         r => r["restaurant_id"] == restaurantInfo.restaurantId
@@ -194,14 +197,26 @@ class DBHelper {
     } catch (e) {
       console.log(e);
       const offlineDb = await offlinePromise;
-      const tx = offlineDb.transaction("offline", "readwrite");
-      const store = tx.objectStore("offline");
+      const offlineTx = offlineDb.transaction("offline", "readwrite");
+      const offlineStore = offlineTx.objectStore("offline");
 
-      store.put(
+      offlineStore.put(
         restaurantInfo,
         `${restaurantInfo.restaurantId}${restaurantInfo.ratingNumber}`
       );
-      this.fireSyncEvent();
+      const reviewsDb = await reviewsPromise;
+      const tx = reviewsDb.transaction("reviews", "readwrite");
+      const store = tx.objectStore("reviews");
+      const allReviews = await store.getAll();
+      console.log(allReviews);
+      const reviews = allReviews.filter(
+        r => r["restaurant_id"] == restaurantInfo.restaurantId
+      );
+      restaurantInfo.rating = restaurantInfo.ratingNumber;
+      console.log(reviews);
+      console.log(restaurantInfo);
+      reviews.push(restaurantInfo);
+      return reviews;
     }
   }
 
