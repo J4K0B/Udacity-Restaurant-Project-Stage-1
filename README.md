@@ -16,11 +16,9 @@ One Paragraph of project description goes here
 git clone https://github.com/J4K0B/Udacity-Restaurant-Project-Stage-1
 ```
 
-2.  Start a server in the dist folder on a port of your choice (5500)
+2.  Start a server in the dist folder on a port of your choice
 
-```
-serve -p 5500
-```
+    _I like to use VSCode's Live-Server plugin_
 
 3.  Clone the REST API and install it
 
@@ -39,4 +37,4 @@ npm run start
 ### Prerequisites
 
 - NodeJS with NPM
-- serve (`npm install serve -g`)
+- A web server of your choice
