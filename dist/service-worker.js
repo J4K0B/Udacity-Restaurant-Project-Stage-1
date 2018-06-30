@@ -1,4 +1,5 @@
-const cacheName = "restaurant-reviews-v12";
+importScripts("./js/db.min.js");
+const cacheName = "restaurant-reviews-v13";
 const urlsToCache = [
   "./index.html",
   // "/js/main.js",
@@ -26,6 +27,7 @@ const urlsToCache = [
 ];
 
 self.addEventListener("fetch", event => {
+  if (event.request.method === "POST") return;
   event.respondWith(
     caches.match(event.request, { ignoreSearch: true }).then(response => {
       return response || fetch(event.request);
@@ -37,4 +39,10 @@ self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(cacheName).then(cache => cache.addAll(urlsToCache))
   );
+});
+
+self.addEventListener("sync", event => {
+  if (event.tag === "offline-requests") {
+    event.waitUntil(DBHelper.doOfflineRequests());
+  }
 });

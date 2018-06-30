@@ -201,7 +201,7 @@ class DBHelper {
         restaurantInfo,
         `${restaurantInfo.restaurantId}${restaurantInfo.ratingNumber}`
       );
-      alert("Your Review will be submitted as soon as you're online!");
+      this.fireSyncEvent();
     }
   }
 
@@ -221,6 +221,24 @@ class DBHelper {
     });
   }
 
+  static fireSyncEvent() {
+    // google dev background sync
+    if ("serviceWorker" in navigator && "SyncManager" in window) {
+      navigator.serviceWorker.ready
+        .then(function(reg) {
+          return reg.sync.register("offline-requests");
+        })
+        .catch(() => {
+          // system was unable to register for a sync,
+          // this could be an OS-level restriction
+          this.doOfflineRequests();
+        });
+    } else {
+      // serviceworker/sync not supported
+      this.doOfflineRequests();
+    }
+  }
+
   // does all offline requests if they are still there
   static async doOfflineRequests() {
     console.log("offlinerequest");
@@ -229,18 +247,21 @@ class DBHelper {
     const store = tx.objectStore("offline");
     const offlineReviews = await store.getAll();
     if (offlineReviews.length <= 0) return;
-    offlineReviews.forEach(review => {
-      this.reviewRequest(review).then(async data => {
-        const tx2 = offlineDb.transaction("offline", "readwrite");
-        const store2 = tx2.objectStore("offline");
-        await store2.clear();
-        const json = await data.json();
-        const reviewsDb = await reviewsPromise;
-        const tx = reviewsDb.transaction("reviews", "readwrite");
-        const store = tx.objectStore("reviews");
-        store.put(json);
-      });
-    });
+    return Promise.all(
+      offlineReviews.map(review => {
+        return this.reviewRequest(review).then(async data => {
+          const tx2 = offlineDb.transaction("offline", "readwrite");
+          const store2 = tx2.objectStore("offline");
+          await store2.clear();
+          const json = await data.json();
+          const reviewsDb = await reviewsPromise;
+          const tx = reviewsDb.transaction("reviews", "readwrite");
+          const store = tx.objectStore("reviews");
+          store.put(json);
+          return;
+        });
+      })
+    );
   }
 
   /**

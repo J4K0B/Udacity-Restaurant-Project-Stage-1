@@ -9,14 +9,14 @@ document.addEventListener("DOMContentLoaded", event => {
   fetchNeighborhoods();
   fetchCuisines();
   setUpMap();
-  DBHelper.doOfflineRequests();
+  // DBHelper.doOfflineRequests();
 });
 
-document.addEventListener("online", () => {
-  if (navigator.onLine) {
-    DBHelper.doOfflineRequests();
-  }
-});
+// document.addEventListener("online", () => {
+//   if (navigator.onLine) {
+//     DBHelper.doOfflineRequests();
+//   }
+// });
 
 /**
  * create on click for map
@@ -211,6 +211,8 @@ if (navigator.serviceWorker) {
     .then(() => console.log("service worker registered"))
     .catch(err => console.log(err));
 }
+
+DBHelper.fireSyncEvent();
 
 // lazy loading from google
 function applyLazyLoad() {
