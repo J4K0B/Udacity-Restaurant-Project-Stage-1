@@ -13,12 +13,6 @@ document.addEventListener("DOMContentLoaded", event => {
   DBHelper.fireSyncEvent();
 });
 
-// document.addEventListener("online", () => {
-//   if (navigator.onLine) {
-//     DBHelper.doOfflineRequests();
-//   }
-// });
-
 /**
  * create on click for map
  */

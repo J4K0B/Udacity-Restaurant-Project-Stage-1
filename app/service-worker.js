@@ -27,7 +27,7 @@ const urlsToCache = [
 ];
 
 self.addEventListener("fetch", event => {
-  if (event.request.method === "POST") return;
+  if (event.request.method === "POST" || event.request.method === "PUT") return;
   event.respondWith(
     caches.match(event.request, { ignoreSearch: true }).then(response => {
       return response || fetch(event.request);

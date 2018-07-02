@@ -14,6 +14,10 @@ const offlinePromise = idb.open("offline", 3, upgradeDb => {
   if (upgradeDb.oldVersion >= 3) return;
   const keyValStore = upgradeDb.createObjectStore("offline");
 });
+const favoritePromise = idb.open("offline_favorite", 3, upgradeDb => {
+  if (upgradeDb.oldVersion >= 3) return;
+  const keyValStore = upgradeDb.createObjectStore("offline_favorite");
+});
 /**
  * Common database helper functions.
  */
@@ -151,27 +155,50 @@ class DBHelper {
     });
   }
 
-  static favoriteRestaurant(id, newState) {
-    return new Promise((resolve, reject) => {
-      fetch(`${this.DATABASE_URL}/restaurants/${id}/?is_favorite=${newState}`, {
+  static async favoriteRestaurant(id, newState) {
+    const url = `${
+      this.DATABASE_URL
+    }/restaurants/${id}/?is_favorite=${newState}`;
+    try {
+      const res = await fetch(url, {
         method: "PUT",
         headers: {
           accept: "application/json"
         }
-      })
-        .then(res => res.json())
-        .then(async json => {
-          // update local db
-          await this.doOfflineRequests();
-          restaurantPromise.then(restaurantsDb => {
-            const tx = restaurantsDb.transaction("restaurants", "readwrite");
-            const store = tx.objectStore("restaurants");
-            store.put(json);
-            resolve(json);
-          });
-        })
-        .catch(err => reject(err));
-    });
+      });
+      const json = await res.json();
+      // update local db
+      this.doOfflineRequests();
+      const restaurantsDb = await restaurantPromise;
+      const tx = restaurantsDb.transaction("restaurants", "readwrite");
+      const store = tx.objectStore("restaurants");
+      store.put(json);
+      return json;
+    } catch (e) {
+      // request failed -> update local db anyway and schedule the request for later
+      const restaurantsDb = await restaurantPromise;
+      const restaurantTx = restaurantsDb.transaction(
+        "restaurants",
+        "readwrite"
+      );
+      const restaurantStore = restaurantTx.objectStore("restaurants");
+      const restaurants = await restaurantStore.getAll();
+      // look for restaurant
+      const restaurant = restaurants.find(r => r.id == id);
+      restaurant["is_favorite"] = newState;
+      restaurantStore.put(restaurant);
+      // schedule request for later
+      const offlineFavoriteDb = await favoritePromise;
+      const offlineFavoriteTx = offlineFavoriteDb.transaction(
+        "offline_favorite",
+        "readwrite"
+      );
+      const offlineFavoriteStore = offlineFavoriteTx.objectStore(
+        "offline_favorite"
+      );
+      offlineFavoriteStore.put(url, id);
+      return restaurant;
+    }
   }
 
   static async postReview(restaurantInfo) {
@@ -195,7 +222,6 @@ class DBHelper {
       );
       return reviews;
     } catch (e) {
-      console.log(e);
       const offlineDb = await offlinePromise;
       const offlineTx = offlineDb.transaction("offline", "readwrite");
       const offlineStore = offlineTx.objectStore("offline");
@@ -208,13 +234,10 @@ class DBHelper {
       const tx = reviewsDb.transaction("reviews", "readwrite");
       const store = tx.objectStore("reviews");
       const allReviews = await store.getAll();
-      console.log(allReviews);
       const reviews = allReviews.filter(
         r => r["restaurant_id"] == restaurantInfo.restaurantId
       );
       restaurantInfo.rating = restaurantInfo.ratingNumber;
-      console.log(reviews);
-      console.log(restaurantInfo);
       reviews.push(restaurantInfo);
       return reviews;
     }
@@ -261,7 +284,16 @@ class DBHelper {
     const tx = offlineDb.transaction("offline", "readwrite");
     const store = tx.objectStore("offline");
     const offlineReviews = await store.getAll();
-    if (offlineReviews.length <= 0) return;
+    const offlineFavoriteDb = await favoritePromise;
+    const offlineFavoriteTx = offlineFavoriteDb.transaction(
+      "offline_favorite",
+      "readwrite"
+    );
+    const offlineFavoriteStore = offlineFavoriteTx.objectStore(
+      "offline_favorite"
+    );
+    const offlineFavorites = await offlineFavoriteStore.getAll();
+    if (offlineReviews.length <= 0 && offlineFavorites <= 0) return;
     return Promise.all(
       offlineReviews.map(review => {
         return this.reviewRequest(review).then(async data => {
@@ -275,6 +307,32 @@ class DBHelper {
           store.put(json);
           return;
         });
+      }),
+      offlineFavorites.map(async url => {
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: {
+            accept: "application/json"
+          }
+        });
+        const json = await res.json();
+        const offlineFavoriteTx = offlineFavoriteDb.transaction(
+          "offline_favorite",
+          "readwrite"
+        );
+        const offlineFavoriteStore = offlineFavoriteTx.objectStore(
+          "offline_favorite"
+        );
+        await offlineFavoriteStore.clear();
+        // update local db
+        const restaurantsDb = await restaurantPromise;
+        const restaurantsTx = restaurantsDb.transaction(
+          "restaurants",
+          "readwrite"
+        );
+        const restaurantsStore = restaurantsTx.objectStore("restaurants");
+        restaurantsStore.put(json);
+        return;
       })
     );
   }
