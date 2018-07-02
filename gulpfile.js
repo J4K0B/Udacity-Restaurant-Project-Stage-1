@@ -4,7 +4,8 @@ const useref = require("gulp-useref");
 const uglify = require("gulp-uglify-es").default;
 const gulpIf = require("gulp-if");
 const cssnano = require("gulp-cssnano");
-const htmlmin = require("gulp-htmlmin");
+// const htmlmin = require("gulp-htmlmin");
+const sourcemaps = require("gulp-sourcemaps");
 
 gulp.task("browserSync", () => {
   browserSync.init({
@@ -20,7 +21,9 @@ gulp.task("useref", () => {
   return gulp
     .src("app/*.html")
     .pipe(useref())
-    .pipe(gulpIf("*.js", uglify()))
+    .pipe(
+      gulpIf("*.js", sourcemaps.init().pipe(uglify())).pipe(sourcemaps.write())
+    )
     .pipe(gulpIf("*.css", cssnano()))
     .pipe(gulp.dest("dist"));
 });
