@@ -6,7 +6,7 @@
 
 ## Stage 3
 
-One Paragraph of project description goes here
+This is an offline capable PWA made with along with the MWS course from Google/Udacity
 
 ## Getting Started
 
